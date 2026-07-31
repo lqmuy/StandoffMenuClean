@@ -1,0 +1,144 @@
+name: Build Standoff Menu APK
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Create Project Structure and Build
+      run: |
+        # Создаем структуру Android проекта
+        mkdir -p app/src/main/java/com/eni/standoff
+        mkdir -p app/src/main/res/values
+
+        # Создаем AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.eni.standoff">
+            <application
+                android:allowBackup="true"
+                android:label="Standoff Menu"
+                android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                <activity android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # Создаем MainActivity.java с кодом меню
+        cat << 'EOF' > app/src/main/java/com/eni/standoff/MainActivity.java
+        package com.eni.standoff;
+
+        import android.app.Activity;
+        import android.os.Bundle;
+        import android.widget.TextView;
+        import android.graphics.Color;
+
+        public class MainActivity extends Activity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                TextView tv = new TextView(this);
+                tv.setText("Standoff Mod Menu Loaded successfully!");
+                tv.setTextColor(Color.WHITE);
+                tv.setTextSize(20);
+                tv.setBackgroundColor(Color.BLACK);
+                setContentView(tv);
+            }
+        }
+        EOF
+
+        # Создаем app/build.gradle
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+        }
+        android {
+            namespace 'com.eni.standoff'
+            compileSdk 33
+            defaultConfig {
+                applicationId "com.eni.standoff"
+                minSdk 24
+                targetSdk 33
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
+
+        # Создаем корневой build.gradle
+        cat << 'EOF' > build.gradle
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath 'com.android.tools.build:gradle:8.1.1'
+            }
+        }
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        EOF
+
+        # Создаем settings.gradle
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_RO_REPOSISTORIES)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        rootProject.name = "StandoffMenu"
+        include ':app'
+        EOF
+
+        # Создаем gradle.properties
+        echo "android.useAndroidX=true" > gradle.properties
+
+        # Имитируем обертку gradle, если нужно, или собираем через системный gradle
+        gradle wrapper --gradle-version 8.2 || true
+        chmod +x gradlew || true
+
+        # Запуск сборки
+        if [ -f "gradlew" ]; then
+          ./gradlew assembleDebug --no-daemon
+        else
+          gradle assembleDebug --no-daemon
+        fi
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Standoff-Menu-Clean-APK
+        path: app/build/outputs/apk/debug/app-debug.apk
